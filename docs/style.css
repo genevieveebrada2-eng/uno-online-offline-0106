@@ -1,0 +1,38 @@
+body{margin:0;background:#0f1c2e;color:#fff;font-family:system-ui}
+.container{max-width:600px;margin:auto;padding:10px}
+h1{text-align:center;color:#ff5252;font-size:22px}
+
+#joinBox input,#joinBox button{padding:10px;margin:5px;border-radius:8px;border:none;width:48%}
+#joinBox button{background:#ff5252;color:white;cursor:pointer}
+
+#table{display:flex;flex-direction:column;height:60vh;justify-content:space-between;margin-top:10px}
+#middleRow{display:flex;justify-content:space-between;align-items:center}
+
+.table-player{background:#1f2f46;padding:6px;border-radius:10px;width:70px;text-align:center;font-size:10px;overflow:hidden;display:flex;flex-direction:column;align-items:center;transition:0.3s}
+.table-player.active{box-shadow:0 0 12px gold;transform:scale(1.05)}
+.table-player img{width:40px;height:40px;border-radius:50%;margin-bottom:2px}
+
+.hand{display:flex;justify-content:center;overflow-x:auto;padding:5px;transition:all .3s}
+.card{width:50px;height:75px;margin:2px;cursor:pointer;transition:.3s;position:relative}
+.card.fan{transform-origin:bottom center}
+.card:hover{transform:scale(1.1) rotate(0deg)}
+
+#pile img,#discard img{width:50px;height:75px;transition:all .5s;cursor:pointer}
+
+#wildPicker{display:none;justify-content:center;margin-top:5px}
+#wildPicker button{width:30px;height:30px;border-radius:50%;border:none;margin:5px;cursor:pointer}
+
+#hud{display:flex;justify-content:space-between;align-items:center;margin-top:5px}
+#scoreboard{font-size:12px}
+#chatBox{background:white;color:black;height:100px;overflow:auto;border-radius:8px;padding:5px;margin-top:5px}
+#msgInput{width:75%;padding:5px;border-radius:5px;border:none}
+#chatPanel button{width:20%;padding:5px;border:none;background:#ff5252;color:white;border-radius:5px;cursor:pointer}
+
+.joinMsg{position:fixed;top:20%;width:100%;text-align:center;font-size:18px;animation:fadeUp 2s forwards}
+@keyframes fadeUp{to{opacity:0; transform:translateY(-40px)}}
+
+#unoAnim {position:absolute;display:none;font-size:32px;color:#ff0;text-shadow:0 0 10px red;animation:pop .8s ease}
+@keyframes pop{0%{transform:scale(0)}100%{transform:scale(1)}}
+
+#gameEndModal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);color:white;font-family:system-ui;justify-content:center;align-items:center;text-align:center;flex-direction:column;z-index:1000;}
+#gameEndModal button{padding:10px 20px;background:#ff5252;border:none;border-radius:8px;color:white;cursor:pointer;font-size:16px;}
