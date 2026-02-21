@@ -3,47 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>UNO Online – Full Multiplayer</title>
-<style>
-body{margin:0;background:#0f1c2e;color:#fff;font-family:system-ui}
-.container{max-width:600px;margin:auto;padding:10px}
-h1{text-align:center;color:#ff5252;font-size:22px}
-
-#joinBox input,#joinBox button{padding:10px;margin:5px;border-radius:8px;border:none;width:48%}
-#joinBox button{background:#ff5252;color:white;cursor:pointer}
-
-#table{display:flex;flex-direction:column;height:60vh;justify-content:space-between;margin-top:10px}
-#middleRow{display:flex;justify-content:space-between;align-items:center}
-
-.table-player{background:#1f2f46;padding:6px;border-radius:10px;width:70px;text-align:center;font-size:10px;overflow:hidden;display:flex;flex-direction:column;align-items:center;transition:0.3s}
-.table-player.active{box-shadow:0 0 12px gold;transform:scale(1.05)}
-.table-player img{width:40px;height:40px;border-radius:50%;margin-bottom:2px}
-
-.hand{display:flex;justify-content:center;overflow-x:auto;padding:5px;transition:all .3s}
-.card{width:50px;height:75px;margin:2px;cursor:pointer;transition:.3s;position:relative}
-.card.fan{transform-origin:bottom center}
-.card:hover{transform:scale(1.1) rotate(0deg)}
-
-#pile img,#discard img{width:50px;height:75px;transition:all .5s;cursor:pointer}
-
-#wildPicker{display:none;justify-content:center;margin-top:5px}
-#wildPicker button{width:30px;height:30px;border-radius:50%;border:none;margin:5px;cursor:pointer}
-
-#hud{display:flex;justify-content:space-between;align-items:center;margin-top:5px}
-#scoreboard{font-size:12px}
-#chatBox{background:white;color:black;height:100px;overflow:auto;border-radius:8px;padding:5px;margin-top:5px}
-#msgInput{width:75%;padding:5px;border-radius:5px;border:none}
-#chatPanel button{width:20%;padding:5px;border:none;background:#ff5252;color:white;border-radius:5px;cursor:pointer}
-
-.joinMsg{position:fixed;top:20%;width:100%;text-align:center;font-size:18px;animation:fadeUp 2s forwards}
-@keyframes fadeUp{to{opacity:0; transform:translateY(-40px)}}
-
-#unoAnim {position:absolute;display:none;font-size:32px;color:#ff0;text-shadow:0 0 10px red;animation:pop .8s ease}
-@keyframes pop{0%{transform:scale(0)}100%{transform:scale(1)}}
-
-#gameEndModal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);color:white;font-family:system-ui;justify-content:center;align-items:center;text-align:center;flex-direction:column;z-index:1000;}
-#gameEndModal button{padding:10px 20px;background:#ff5252;border:none;border-radius:8px;color:white;cursor:pointer;font-size:16px;}
-</style>
+<title>UNO Online – Multiplayer & AI</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="container">
@@ -59,9 +20,9 @@ h1{text-align:center;color:#ff5252;font-size:22px}
 
 <div id="gameArea" style="display:none">
   <div id="table">
-    <div id="topPlayers" style="display:flex;justify-content:space-between;margin-bottom:5px"></div>
+    <div id="topPlayers"></div>
     <div id="middleRow">
-      <div id="leftPlayers" style="display:flex;flex-direction:column;justify-content:space-between"></div>
+      <div id="leftPlayers"></div>
       <div id="centerTable">
         <div id="pile" onclick="drawCard()"></div>
         <div id="discard"></div>
@@ -72,7 +33,7 @@ h1{text-align:center;color:#ff5252;font-size:22px}
           <button onclick="pickColor('Yellow')" style="background:gold"></button>
         </div>
       </div>
-      <div id="rightPlayers" style="display:flex;flex-direction:column;justify-content:space-between"></div>
+      <div id="rightPlayers"></div>
     </div>
     <div id="hand" class="hand"></div>
   </div>
@@ -96,7 +57,7 @@ h1{text-align:center;color:#ff5252;font-size:22px}
 <div id="gameEndModal">
   <h2 id="winnerName"></h2>
   <p>Final Scores:</p>
-  <div id="finalScores" style="margin-bottom:15px;"></div>
+  <div id="finalScores"></div>
   <button onclick="restartGame()">Restart Game</button>
 </div>
 </div>
@@ -109,70 +70,6 @@ h1{text-align:center;color:#ff5252;font-size:22px}
 <audio id="sndDraw" src="https://assets.mixkit.co/sfx/preview/mixkit-paper-slide-1530.wav"></audio>
 <audio id="sndUNO" src="https://assets.mixkit.co/sfx/preview/mixkit-game-level-completed-2059.wav"></audio>
 
-<script>
-// Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyBna-Ul3PbjkDrUtFtTU3rDaCl4PVnw4Mg",
-  authDomain: "uno-multiplayer-e7d24.firebaseapp.com",
-  projectId: "uno-multiplayer-e7d24",
-  storageBucket: "uno-multiplayer-e7d24.appspot.com",
-  messagingSenderId: "120283872563",
-  appId: "1:120283872563:web:dc997346aa083f29c81246"
-};
-firebase.initializeApp(firebaseConfig);
-const db=firebase.database();
-
-// Game Data
-const baseURL="https://raw.githubusercontent.com/john-costanzo/uno-card-images/master/";
-const colors=["Red","Green","Blue","Yellow"];
-const specials=["Skip","Reverse","DrawTwo"];
-const avatars=[...Array(10)].map((_,i)=>`https://i.pravatar.cc/50?img=${i+1}`);
-let players={}, hand=[], pile=[], discard=[];
-let isOffline=true, turn=0, dir=1, mustDraw=0, unoCalled=false;
-let myId, roomRef;
-const winningScore=50;
-
-const handDiv=document.getElementById("hand");
-const discardDiv=document.getElementById("discard");
-const pileDiv=document.getElementById("pile");
-const scoreboard=document.getElementById("scoreboard");
-const chatBox=document.getElementById("chatBox");
-const badgesDiv=document.getElementById("badges");
-
-// Helpers
-function randCard(){ const r=Math.random(); if(r<0.1) return {wild:"Wild"}; if(r<0.15) return {wild:"Wild_DrawFour"}; if(r<0.35) return {color:colors[Math.floor(Math.random()*4)], special:specials[Math.floor(Math.random()*3)]}; return {color:colors[Math.floor(Math.random()*4)], num:Math.floor(Math.random()*10)}; }
-function getCardURL(c){ if(c.wild) return baseURL+c.wild+".png"; if(c.special) return baseURL+c.color+"_"+c.special+".png"; return baseURL+c.color+"_"+c.num+".png"; }
-function playSound(type){ if(type==="play") sndPlay.play(); if(type==="draw") sndDraw.play(); if(type==="uno") sndUNO.play(); }
-
-// --- ONLINE ---
-function startOnline(){
-  isOffline=false;
-  const name=document.getElementById("nameInput").value.trim();
-  let room=document.getElementById("roomInput").value.trim();
-  if(!name){ alert("Enter name"); return; }
-  myId=Date.now().toString();
-  if(!room) room=Math.random().toString(36).substring(2,8);
-  document.getElementById("joinBox").style.display="none";
-  document.getElementById("gameArea").style.display="block";
-  roomRef=db.ref("rooms/"+room);
-  roomRef.child("players/"+myId).set({name:name,hand:[],score:0,avatar:avatars[0]});
-  roomRef.child("players").on("value",snap=>{ players=snap.val()||{}; if(!hand.length) hand=players[myId].hand; render(); });
-  roomRef.child("chat").on("value",snap=>{ chatBox.innerHTML=""; const messages=snap.val()||[]; messages.forEach(m=>chatBox.innerHTML+=`<div><b>${m.name}:</b> ${m.text}</div>`); chatBox.scrollTop=chatBox.scrollHeight; });
-  roomRef.child("gameState").once("value",snap=>{
-    if(!snap.exists()){ pile=[...Array(60)].map(randCard); discard=[pile.pop()]; roomRef.child("gameState").set({pile,discard,turn:0,dir:1,mustDraw:0}); }
-    else{ const s=snap.val(); pile=s.pile; discard=s.discard; turn=s.turn; dir=s.dir; mustDraw=s.mustDraw; render(); }
-  });
-}
-
-function sendMsg(){ 
-  if(isOffline) return; 
-  const msgInput=document.getElementById("msgInput"); 
-  if(!msgInput.value.trim()) return; 
-  const msg={name:players[myId].name,text:msgInput.value}; 
-  roomRef.child("chat").push(msg); 
-  msgInput.value=""; 
-}
-
-// --- OFFLINE ---
-function startOffline(){ document.getElementById("joinBox").style.display="none"; document.getElementById("gameArea").style.display="block"; const names=prompt("Enter names (comma separated)","You,CPU1,CPU2,CPU3").split(","); players={}; names.forEach((n,i)=>{ players[i]={name:n.trim(),hand:[],score:0,badges:{},avatar:avatars[i]}; for(let j=0;j<7;j++) players[i].hand.push(randCard()); }); hand=players[0].hand; pile=[...Array(60)].map(randCard); discard=[pile.pop()]; render(); setTimeout(cpuPlay,1000); }
-function cpuPlay(){ if(isOffline){ const ids=Object.keys(players); const p=players[turn]; if(p!==players[0]){ const playable=p.hand.findIndex(canPlay); if(playable>=0){ const card=p.hand.splice(playable,1)[0]; discard.push(card); if(card.special==="Skip") nextTurn(2); else if(card.special==="Reverse"){ dir*=-1; nextTurn(1);} else if(card.special==="DrawTwo"){ mustDraw+=2; nextTurn(1);} else if(card.wild==="Wild_DrawFour"){ mustDraw+=4; nextTurn(1);} else nextTurn(1); render(); } else { p.hand.push(pile.pop()); nextTurn(1); render(); } if(hand.length===0) endRound(); setTimeout(cpuPlay,1000);} }
+<script src="script.js"></script>
+</body>
+                                  </html>
